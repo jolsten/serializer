@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+enum ByteOrder {
+    lsbf = 0;
+    msbf = 1;
+}
+
+message Frame {
+    int64 c_time = 1;
+    int64 a_time = 2;
+    bytes data = 3;
+    int32 bits_per_word = 4;
+    ByteOrder byte_order = 5;
+}

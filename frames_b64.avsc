@@ -1,0 +1,19 @@
+{
+    "namespace": "frames.avro",
+    "type": "record",
+    "name": "Frame",
+    "fields": [
+        {"name": "c_time",          "type": "string"},
+        {"name": "a_time",          "type": "string"},
+        {"name": "data",            "type": "bytes"},
+        {"name": "bits_per_word",   "type": "int"},
+        {
+            "name": "byte_order",
+            "type": {
+                "type": "enum",
+                "name": "byte_order",
+                "symbols": ["LE", "BE"]
+            }
+        }
+    ]
+}

@@ -1,0 +1,13 @@
+namespace serializer.flatbuffers;
+
+ enum ByteOrder : byte { LE, BE }
+
+ table Frame {
+    c_time:int64;
+    a_time:int64;
+    data:[ubyte];
+    bits_per_word:uint8;
+    byte_order:ByteOrder;
+ }
+
+root_type Frame;

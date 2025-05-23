@@ -24,6 +24,12 @@ def time_protobuf(frame: Frame):
     return deserialized
 
 
+def time_flatbuffers(frame: Frame):
+    serialzied = frame.to_flatbuffers()
+    deserialized = Frame.from_flatbuffers(serialzied)
+    return deserialized
+
+
 def time_msgpack(frame: Frame):
     serialzied = frame.to_msgpack()
     deserialized = Frame.from_msgpack(serialzied)
@@ -46,6 +52,7 @@ timers = {
     "json": time_json,
     "json_b64": time_json_b64,
     "protobuf": time_protobuf,
+    "flatbuffers": time_flatbuffers,
     "msgpack": time_msgpack,
     "avro": time_avro,
     "avro_b64": time_avro_b64,
@@ -78,9 +85,12 @@ def main():
             results.append(row)
 
     df = pd.DataFrame(results)
-    df.to_csv("results.csv")
+    df.to_csv("results.csv", index=False)
     print(df)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass

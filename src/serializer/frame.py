@@ -6,12 +6,17 @@ from dataclasses import dataclass
 from typing import Literal
 
 import avro.schema
+import flatbuffers
 import msgpack
 import numpy as np
 import numpy.typing as npt
 from avro.io import BinaryDecoder, BinaryEncoder, DatumReader, DatumWriter
 
+import serializer.flatbuffers.ByteOrder as fbs_ByteOrder  # noqa: F401
+import serializer.flatbuffers.Frame as fbs_Frame  # noqa: F401
 from serializer import frames_pb2
+
+fbs_builder = flatbuffers.Builder()
 
 
 def bpw_to_dtype(value: int) -> Literal["u1", "u2", "u4", "u8"]:
@@ -144,6 +149,50 @@ class Frame:
             a_time=np.datetime64(pb.a_time, "ns"),
             data=data,
             bits_per_word=pb.bits_per_word,
+        )
+
+    def to_flatbuffers(self) -> bytearray:
+        builder = fbs_builder
+        builder.Clear()
+
+        data_bytes = self.data.tobytes()
+        fbs_Frame.FrameStartDataVector(builder, len(data_bytes))
+        for b in reversed(data_bytes):
+            builder.PrependByte(b)
+        data_vector = builder.EndVector()
+
+        if self.byte_order == "LE":
+            byte_order = fbs_ByteOrder.ByteOrder().LE
+        else:
+            byte_order = fbs_ByteOrder.ByteOrder().BE
+
+        fbs_Frame.Start(builder)
+        fbs_Frame.AddCTime(builder, self.c_time.astype(int))
+        fbs_Frame.AddATime(builder, self.a_time.astype(int))
+        fbs_Frame.FrameAddData(builder, data_vector)
+        fbs_Frame.AddBitsPerWord(builder, self.bits_per_word)
+        fbs_Frame.AddByteOrder(builder, byte_order)
+        frame = fbs_Frame.End(builder)
+        builder.Finish(frame)
+        buf = builder.Output()
+        return buf
+
+    @classmethod
+    def from_flatbuffers(self, buf: bytes) -> "Frame":
+        frame = fbs_Frame.Frame.GetRootAs(buf, 0)
+        c_time = np.datetime64(frame.CTime(), "ns")
+        a_time = np.datetime64(frame.ATime(), "ns")
+        bits_per_word = frame.BitsPerWord()
+        byte_order = "LE" if frame.ByteOrder() == fbs_ByteOrder.ByteOrder.LE else "BE"
+        dtype = bpw_to_dtype(bits_per_word)
+        order = "<" if byte_order == "lsbf" else ">"
+        dtype = f"{order}{dtype}"
+        data = frame.DataAsNumpy()
+        return Frame(
+            c_time=c_time,
+            a_time=a_time,
+            data=data.view(dtype),
+            bits_per_word=bits_per_word,
         )
 
     def to_msgpack(self) -> bytes:

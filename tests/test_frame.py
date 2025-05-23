@@ -42,6 +42,12 @@ class TestRoundtrip:
         assert isinstance(serialized, bytes)
         self._check(deserialized)
 
+    def test_flatbuffers(self):
+        serialized = self.frame.to_flatbuffers()
+        deserialized = Frame.from_flatbuffers(serialized)
+        assert isinstance(serialized, bytearray)
+        self._check(deserialized)
+
     def test_msgpack(self):
         serialized = self.frame.to_msgpack()
         deserialized = Frame.from_msgpack(serialized)
